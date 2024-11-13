@@ -67,6 +67,18 @@ impl ShellCommand for ExecutableCommand {
             ExecuteResult::Continue(1, Vec::new(), Vec::new())
           }
         },
+        _ = tokio::signal::ctrl_c() => {
+          println!("");
+          println!("ctrl-c detected: {}", command_name.display());
+          println!("");
+          if let Ok(None) = child.try_wait() {
+            println!("");
+            println!("killing: {}", command_name.display());
+            println!("");
+            let _ = child.kill().await;
+          }
+          ExecuteResult::for_cancellation()
+        }
         _ = context.state.token().cancelled() => {
           let _ = child.kill().await;
           ExecuteResult::for_cancellation()
